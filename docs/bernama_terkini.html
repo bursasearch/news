@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Bernama Terkini - Berita Suara</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #e6edf4 100%);
+            font-family: 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+            padding: 24px 20px;
+            color: #1a2c3e;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .audio-card {
+            background: #ffffff;
+            border-radius: 48px 32px 48px 32px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+        .header-bernama {
+            background: #0033a0;
+            padding: 20px 32px;
+            display: flex;
+            align-items: baseline;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            color: white;
+            border-bottom: 4px solid #ffcc00;
+        }
+        .logo-area h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: #ffcc00;
+            color: #0033a0;
+            padding: 0 12px 0 16px;
+            border-radius: 60px;
+            display: inline-block;
+        }
+        .logo-area span { font-size: 0.9rem; margin-left: 12px; opacity: 0.9; }
+        .date-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+        }
+        .audio-player-panel { padding: 28px 32px; background: #fefefe; border-bottom: 1px solid #e2edf2; }
+        .tts-header { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 24px; }
+        .tts-header h2 { font-size: 1.6rem; font-weight: 600; background: linear-gradient(135deg, #0033a0, #0066cc); background-clip: text; -webkit-background-clip: text; color: transparent; }
+        .badge-ai { background: #eef2ff; border-radius: 100px; padding: 6px 18px; font-size: 0.8rem; font-weight: 600; color: #0033a0; border: 1px solid #cddcff; }
+        .controls-wrapper {
+            display: flex; flex-wrap: wrap; gap: 20px; align-items: center;
+            justify-content: space-between; background: #f8fafd; padding: 20px 24px;
+            border-radius: 60px; margin: 16px 0 8px 0;
+        }
+        .play-buttons { display: flex; gap: 16px; align-items: center; }
+        .btn {
+            border: none; background: white; padding: 12px 28px; border-radius: 100px;
+            font-weight: 600; font-size: 1rem; display: inline-flex; align-items: center;
+            gap: 12px; cursor: pointer; transition: 0.2s; font-family: inherit;
+        }
+        .btn-primary { background: #0033a0; color: white; box-shadow: 0 6px 14px rgba(0,51,160,0.3); }
+        .btn-primary:hover { background: #00267a; transform: scale(0.98); }
+        .btn-secondary { background: #eef2ff; color: #1f3a6b; border: 1px solid #cbdffc; }
+        .btn-stop { background: #fef3f2; color: #b91c1c; border: 1px solid #ffcdcd; }
+        .status-area { background: #eef2fa; border-radius: 40px; padding: 10px 24px; display: flex; align-items: center; gap: 12px; }
+        .status-led { width: 12px; height: 12px; border-radius: 50%; background: #2b9348; transition: 0.2s; }
+        .status-led.speaking { background: #e85d04; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; transform: scale(1.2); } }
+        .news-content { padding: 32px 36px; background: white; }
+        .news-title { font-size: 1.9rem; font-weight: 800; margin-bottom: 20px; border-left: 5px solid #ffcc00; padding-left: 24px; color: #002266; line-height: 1.3; }
+        .meta-info { display: flex; gap: 28px; margin-bottom: 28px; font-size: 0.85rem; color: #59748f; border-bottom: 1px dashed #cddfe7; padding-bottom: 18px; flex-wrap: wrap; }
+        .article-text { font-size: 1.08rem; line-height: 1.65; color: #1f2f3e; text-align: justify; }
+        .article-text p { margin-bottom: 1.35rem; }
+        .article-text strong { color: #0033a0; }
+        .quote { background: #f0f6fe; border-left: 4px solid #ffcc00; padding: 18px 24px; margin: 1.5rem 0; border-radius: 20px; }
+        .back-home {
+            display: inline-block; margin-top: 20px; background: #0033a0; color: white;
+            padding: 12px 28px; border-radius: 60px; text-decoration: none; font-weight: 600;
+            transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .back-home:hover { background: #00267a; transform: translateY(-2px); }
+        footer { text-align: center; font-size: 0.75rem; color: #5f7f9e; padding: 28px 16px 12px; border-top: 1px solid #dce7f0; margin-top: 20px; }
+        @media (max-width: 650px) {
+            .news-title { font-size: 1.5rem; }
+            .controls-wrapper { flex-direction: column; align-items: stretch; }
+            .news-content { padding: 24px 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="audio-card">
+        <div class="header-bernama">
+            <div class="logo-area">
+                <h1>BERNAMA</h1>
+                <span>Terkini · Suara Berita</span>
+            </div>
+            <div class="date-badge" id="dateBadge"></div>
+        </div>
+        <div class="audio-player-panel">
+            <div class="tts-header">
+                <h2>🎙️ Dengarkan Berita Penuh</h2>
+                <div class="badge-ai">⚡ Bacaan Suara Natural · Terkini</div>
+            </div>
+            <div class="controls-wrapper">
+                <div class="play-buttons">
+                    <button id="playBtn" class="btn btn-primary">▶ Mainkan Berita</button>
+                    <button id="pauseBtn" class="btn btn-secondary">⏸ Jeda</button>
+                    <button id="stopBtn" class="btn btn-stop">⏹ Henti</button>
+                </div>
+                <div class="status-area">
+                    <span class="status-led" id="statusLed"></span>
+                    <span id="statusText">🎧 Sedia untuk main</span>
+                </div>
+            </div>
+        </div>
+        <div class="news-content">
+            <div class="news-title" id="newsTitle">Malaysia Berada Di Kedudukan Strategik Manfaat Pengalihan Laluan Selat Hormuz</div>
+            <div class="meta-info">
+                <span>📰 Bernama</span>
+                <span>🕘 <span id="pubDate">26 April 2026</span></span>
+                <span>🏷️ TERKINI</span>
+            </div>
+            <div class="article-text" id="articleText">
+                <p><strong>KUALA LUMPUR, 26 April (Bernama)</strong> -- Malaysia berada dalam kedudukan strategik untuk menyerap peningkatan aliran perdagangan yang dialihkan melalui Selat Melaka sekiranya pengendali perkapalan memilih laluan alternatif bagi mengelakkan ketegangan di Selat Hormuz yang terjejas konflik.</p>
+                <p>Kelebihan ini dipacu oleh kekuatan geostrategik Malaysia sebagai hab rantaian bekalan serantau, menurut <strong>Profesor Dr Nor Aida Abdul Rahman</strong> dari Universiti Kuala Lumpur.</p>
+                <p>“Namun, ia hanya menjadi kelebihan komersial sebenar apabila disokong oleh kecekapan operasi,” katanya kepada Bernama ketika mengulas kesan konflik Asia Barat terhadap industri rantaian bekalan negara.</p>
+                <p>Nor Aida berkata <strong>Pelan Induk Logistik dan Pemudahcaraan Perdagangan Kementerian Pengangkutan</strong> secara jelas meletakkan Malaysia sebagai “Gerbang Logistik Pilihan ke Asia”.</p>
+                <div class="quote">
+                    “Bagi memperkukuh kedudukan ini, Malaysia boleh terus menambah baik masa pusing ganti pelabuhan, melancarkan proses kastam serta memperkukuh integrasi antara zon perindustrian dan rangkaian logistik daratan.”
+                </div>
+                <p>Beliau berkata insentif seperti skim Kompleks Logistik Pintar oleh Lembaga Pembangunan Pelaburan Malaysia (MIDA) turut menyokong pelaburan dalam infrastruktur logistik yang lebih pintar dan cekap.</p>
+                <p>Dengan kelebihan sedia ada, Malaysia berada dalam kedudukan baik untuk menyerap sebahagian pengalihan aliran perdagangan global. Namun kelebihan itu perlu disokong oleh penambahbaikan berterusan merangkumi keseluruhan ekosistem logistik.</p>
+                <p>Sementara itu, penganalisis geostrategik Malaysia, <strong>Profesor Dr Azmi Hassan</strong> berkata pergolakan di Selat Hormuz telah kembali menonjolkan kepentingan laluan sempit strategik dunia serta menyerlahkan kestabilan laluan perairan Asia Tenggara.</p>
+                <p style="margin-top: 24px;">-- BERNAMA --</p>
+            </div>
+        </div>
+        <footer>🎧 Klik Main untuk mendengar bacaan Bahasa Melayu. Sumber: Bernama</footer>
+    </div>
+    <div style="text-align: center;">
+        <a href="index.html" class="back-home">← Kembali ke News Hub</a>
+    </div>
+</div>
+
+<script>
+    // 显示当前日期
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ms-MY', { year:'numeric', month:'long', day:'numeric' });
+    document.getElementById('dateBadge').innerText = '📅 ' + dateStr;
+    document.getElementById('pubDate').innerText = dateStr;
+
+    // ========== 语音朗读功能 (分句切片，稳定) ==========
+    const articleDiv = document.getElementById('articleText');
+    const synth = window.speechSynthesis;
+    let utteranceChunks = [];
+    let currentChunkIndex = 0;
+    let isPausedFlag = false;
+    const statusTextSpan = document.getElementById('statusText');
+    const statusLed = document.getElementById('statusLed');
+
+    function updateUIStatus(status) {
+        const states = {
+            'ready': { text: '🎧 Sedia untuk main', class: '' },
+            'speaking': { text: '🔊 Sedang membaca berita...', class: 'speaking' },
+            'paused': { text: '⏸ Dijeda. Tekan main untuk sambung.', class: '' },
+            'stopped': { text: '🛑 Bacaan dihentikan.', class: '' },
+            'error': { text: '⚠️ Ralat suara. Guna Chrome/Edge.', class: '' }
+        };
+        const s = states[status] || states.ready;
+        statusTextSpan.innerText = s.text;
+        statusLed.className = 'status-led ' + s.class;
+    }
+
+    function splitTextIntoChunks(fullText) {
+        let cleaned = fullText.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+        let sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-Z"“])/);
+        const chunks = [];
+        for (let sent of sentences) {
+            if (sent.length <= 200) chunks.push(sent.trim());
+            else {
+                let parts = sent.split(/[,;]/);
+                let temp = '';
+                for (let part of parts) {
+                    if ((temp + part).length < 200) temp += (temp ? ',' : '') + part;
+                    else { if (temp.trim()) chunks.push(temp.trim()); temp = part; }
+                }
+                if (temp.trim()) chunks.push(temp.trim());
+            }
+        }
+        return chunks.filter(c => c.length > 5);
+    }
+
+    function speakNextChunk() {
+        if (currentChunkIndex >= utteranceChunks.length) { updateUIStatus('ready'); return; }
+        if (isPausedFlag) return;
+        const textToSpeak = utteranceChunks[currentChunkIndex];
+        const utter = new SpeechSynthesisUtterance(textToSpeak);
+        utter.lang = 'ms-MY'; utter.rate = 0.92; utter.pitch = 1.0;
+        utter.onstart = () => updateUIStatus('speaking');
+        utter.onend = () => { if (!isPausedFlag) { currentChunkIndex++; speakNextChunk(); } };
+        utter.onerror = () => { if (!isPausedFlag) { currentChunkIndex++; speakNextChunk(); } };
+        synth.speak(utter);
+    }
+
+    function startFullReading() {
+        if (!synth) { updateUIStatus('error'); return; }
+        synth.cancel();
+        let rawText = articleDiv.innerText || articleDiv.textContent;
+        if (!rawText || rawText.length < 20) { updateUIStatus('error'); return; }
+        utteranceChunks = splitTextIntoChunks(rawText);
+        currentChunkIndex = 0;
+        isPausedFlag = false;
+        if (utteranceChunks.length) speakNextChunk();
+        else updateUIStatus('error');
+    }
+
+    function pauseReading() {
+        if (synth.speaking && !synth.paused) {
+            synth.pause();
+            isPausedFlag = true;
+            updateUIStatus('paused');
+        }
+    }
+
+    function resumeReading() {
+        if (synth.paused) {
+            synth.resume();
+            isPausedFlag = false;
+            updateUIStatus('speaking');
+        } else if (isPausedFlag && !synth.speaking) {
+            isPausedFlag = false;
+            speakNextChunk();
+        } else {
+            startFullReading();
+        }
+    }
+
+    function stopReading() {
+        synth.cancel();
+        isPausedFlag = false;
+        currentChunkIndex = 0;
+        utteranceChunks = [];
+        updateUIStatus('stopped');
+        setTimeout(() => updateUIStatus('ready'), 200);
+    }
+
+    document.getElementById('playBtn').onclick = () => {
+        if (isPausedFlag || (synth && synth.paused)) resumeReading();
+        else startFullReading();
+    };
+    document.getElementById('pauseBtn').onclick = () => pauseReading();
+    document.getElementById('stopBtn').onclick = () => stopReading();
+
+    if (!synth) updateUIStatus('error');
+    else updateUIStatus('ready');
+</script>
+</body>
+</html>
