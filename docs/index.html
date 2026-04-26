@@ -1,1 +1,270 @@
-<h1>Hello World</h1>
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Berita Suara · News Hub | Bernama & CNN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Noto Sans', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #0a2b3e 0%, #1a4a6f 100%);
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .main-header {
+            text-align: center;
+            margin-bottom: 50px;
+            color: white;
+        }
+
+        .main-header h1 {
+            font-size: 3.2rem;
+            letter-spacing: -1px;
+            background: linear-gradient(135deg, #FFD700, #FFA500);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            text-shadow: none;
+            margin-bottom: 12px;
+        }
+
+        .main-header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .header-badge {
+            display: inline-block;
+            background: rgba(255,215,0,0.2);
+            backdrop-filter: blur(4px);
+            padding: 8px 20px;
+            border-radius: 60px;
+            font-size: 0.85rem;
+            margin-top: 16px;
+            border: 1px solid rgba(255,215,0,0.4);
+        }
+
+        /* Grid kad */
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 32px;
+            margin-bottom: 50px;
+        }
+
+        .news-card {
+            background: white;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 20px 35px -12px rgba(0, 0, 0, 0.35);
+            transition: transform 0.25s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .news-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 28px 40px -15px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Warna header setiap kategori */
+        .card-header {
+            padding: 32px 28px 24px;
+            color: white;
+        }
+
+        .bernama-terkini {
+            background: linear-gradient(135deg, #0033a0, #1e5bc0);
+        }
+
+        .bernama-ekonomi {
+            background: linear-gradient(135deg, #1e3c72, #2b4a82);
+        }
+
+        .cnn-cn {
+            background: linear-gradient(135deg, #b22222, #8b0000);
+        }
+
+        .card-header h2 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .badge-category {
+            background: rgba(255,255,240,0.2);
+            border-radius: 100px;
+            padding: 5px 14px;
+            font-size: 0.7rem;
+            font-weight: 500;
+            width: fit-content;
+        }
+
+        .card-body {
+            padding: 24px 28px 28px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .news-preview {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #2c3e44;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .news-meta {
+            font-size: 0.75rem;
+            color: #7f8c8d;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid #ecf0f1;
+            padding-top: 18px;
+            margin-top: 8px;
+        }
+
+        .feature-note {
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            backdrop-filter: blur(8px);
+            border-radius: 60px;
+            padding: 12px 28px;
+            color: #f8f9fa;
+            display: inline-block;
+            width: auto;
+            margin: 0 auto 30px;
+            font-size: 0.9rem;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: rgba(255,255,240,0.7);
+            font-size: 0.8rem;
+            border-top: 1px solid rgba(255,255,255,0.2);
+            padding-top: 30px;
+        }
+
+        @media (max-width: 750px) {
+            .main-header h1 { font-size: 2rem; }
+            .news-grid { grid-template-columns: 1fr; }
+            .card-header h2 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="main-header">
+        <h1>📢 Berita Suara</h1>
+        <p>Dengar berita harian dengan bacaan audio AI</p>
+        <div class="header-badge">
+            🎧 新闻朗读 | 支援 Chrome / Edge / Safari
+        </div>
+    </div>
+
+    <div class="news-grid">
+        <!-- Bernama Terkini -->
+        <a href="bernama_terkini.html" class="news-card">
+            <div class="card-header bernama-terkini">
+                <h2>🇲🇾 Bernama <span style="font-size:1.2rem;">🔊</span></h2>
+                <div class="badge-category">🎙️ Terkini · Berita Semasa</div>
+            </div>
+            <div class="card-body">
+                <div class="news-preview" id="previewTerkini">
+                    📰 Berita utama terkini dari Malaysia dan dunia.
+                </div>
+                <div class="news-meta">
+                    <span>🕒 Kemaskini: <span id="timeTerkini">Hari ini</span></span>
+                    <span>🎧 Audio tersedia</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Bernama Ekonomi -->
+        <a href="bernama_ekonomi.html" class="news-card">
+            <div class="card-header bernama-ekonomi">
+                <h2>📈 Bernama <span style="font-size:1.2rem;">🎙️</span></h2>
+                <div class="badge-category">📊 EKONOMI & PASARAN</div>
+            </div>
+            <div class="card-body">
+                <div class="news-preview" id="previewEkonomi">
+                    💹 Analisis ekonomi, perdagangan, dan logistik.
+                </div>
+                <div class="news-meta">
+                    <span>🕒 Kemaskini: <span id="timeEkonomi">Hari ini</span></span>
+                    <span>🎧 Audio tersedia</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- CNN 中文版 -->
+        <a href="cnncn.html" class="news-card">
+            <div class="card-header cnn-cn">
+                <h2>🌏 CNN 中文 <span style="font-size:1.2rem;">🎙️</span></h2>
+                <div class="badge-category">🇨🇳 国际新闻 · 语音朗读</div>
+            </div>
+            <div class="card-body">
+                <div class="news-preview" id="previewCnn">
+                    🌐 全球头条、国际局势、财经科技资讯。
+                </div>
+                <div class="news-meta">
+                    <span>🕒 更新: <span id="timeCnn">今日</span></span>
+                    <span>🎧 支援朗读</span>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div style="text-align: center;">
+        <div class="feature-note">
+            💡 Klik mana-mana kad → Tekan butang 「Mainkan Berita」 → Dengar dengan suara semula jadi
+        </div>
+    </div>
+    <div class="footer">
+        <p>🔊 Sumber: Bernama (RSS) & CNN · Dikemaskini secara automatik setiap hari</p>
+        <p style="margin-top: 12px;">📌 Disyorkan guna pelayar Chrome / Edge untuk pengalaman audio terbaik</p>
+        <p>📅 <span id="displayDate"></span></p>
+    </div>
+</div>
+
+<script>
+    // Papar tarikh semasa
+    const now = new Date();
+    const formattedDate = now.toLocaleDateString('ms-MY', { year: 'numeric', month: 'long', day: 'numeric' });
+    const dateSpan = document.getElementById('displayDate');
+    if (dateSpan) dateSpan.innerText = formattedDate;
+
+    // Cuba ambil metadata dari setiap halaman jika dihost secara same-origin? ini hanya hiasan.
+    // Untuk fungsi sebenar, paparan ringkas sudah memadai.
+    // Kita set masa statik berdasarkan masa sistem.
+    const timeString = now.toLocaleTimeString('ms-MY', { hour: '2-digit', minute:'2-digit' });
+    if(document.getElementById('timeTerkini')) document.getElementById('timeTerkini').innerText = `${formattedDate} ${timeString}`;
+    if(document.getElementById('timeEkonomi')) document.getElementById('timeEkonomi').innerText = `${formattedDate} ${timeString}`;
+    if(document.getElementById('timeCnn')) document.getElementById('timeCnn').innerText = `${formattedDate}`;
+</script>
+</body>
+</html>
