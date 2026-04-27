@@ -83,6 +83,16 @@
         }
         .back-home:hover { background: #152c54; transform: translateY(-2px); }
         footer { text-align: center; font-size: 0.75rem; color: #5f7f9e; padding: 28px 16px 12px; border-top: 1px solid #dce7f0; margin-top: 20px; }
+        .language-lock {
+            background: #e8f0e8;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 0.7rem;
+            color: #2c5e2c;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
         @media (max-width: 650px) {
             .news-title { font-size: 1.5rem; }
             .controls-wrapper { flex-direction: column; align-items: stretch; }
@@ -116,6 +126,11 @@
                     <span id="statusText">🎧 Sedia untuk main</span>
                 </div>
             </div>
+            <div style="margin-top: 12px; text-align: center;">
+                <div class="language-lock">
+                    🔒 Bahasa bacaan: <strong>MALAYSIA (ms-MY)</strong> | 马来语朗读
+                </div>
+            </div>
         </div>
         <div class="news-content">
             <div class="news-title">Rang Undang-Undang Perbekalan 2026 Pacu Daya Tahan Ekonomi Dan Kesejahteraan Rakyat</div>
@@ -137,7 +152,7 @@
                 <p style="margin-top: 24px;">-- BERNAMA --</p>
             </div>
         </div>
-        <footer>🎧 Klik Main untuk mendengar bacaan Bahasa Melayu. Sumber: Bernama Ekonomi</footer>
+        <footer>🎧 Bahasa bacaan dikunci kepada MELAYU (ms-MY) untuk kualiti audio terbaik.</footer>
     </div>
     <div style="text-align: center;">
         <a href="index.html" class="back-home">← Kembali ke News Hub</a>
@@ -145,24 +160,33 @@
 </div>
 
 <script>
+    // 显示当前日期
     const now = new Date();
     const dateStr = now.toLocaleDateString('ms-MY', { year:'numeric', month:'long', day:'numeric' });
     document.getElementById('dateBadge').innerText = '📅 ' + dateStr;
     document.getElementById('pubDate').innerText = dateStr;
 
-    // 语音功能 (与 terkini 相同，稳定切片)
+    // ========== 语音朗读功能 - 强制锁定马来语 (ms-MY) ==========
     const articleDiv = document.getElementById('articleText');
     const synth = window.speechSynthesis;
     let utteranceChunks = [], currentChunkIndex = 0, isPausedFlag = false;
+    let currentUtterance = null;
     const statusTextSpan = document.getElementById('statusText');
     const statusLed = document.getElementById('statusLed');
 
     function updateUIStatus(status) {
-        const states = { 'ready': { text: '🎧 Sedia untuk main', class: '' }, 'speaking': { text: '🔊 Sedang membaca...', class: 'speaking' }, 'paused': { text: '⏸ Dijeda', class: '' }, 'stopped': { text: '🛑 Dihentikan', class: '' }, 'error': { text: '⚠️ Ralat', class: '' } };
+        const states = {
+            'ready': { text: '🎧 Sedia untuk main (BM)', class: '' },
+            'speaking': { text: '🔊 Sedang membaca dalam Bahasa Melayu...', class: 'speaking' },
+            'paused': { text: '⏸ Dijeda. Tekan main untuk sambung.', class: '' },
+            'stopped': { text: '🛑 Bacaan dihentikan.', class: '' },
+            'error': { text: '⚠️ Ralat. Pastikan pelayar sokong ms-MY.', class: '' }
+        };
         const s = states[status] || states.ready;
         statusTextSpan.innerText = s.text;
         statusLed.className = 'status-led ' + s.class;
     }
+
     function splitTextIntoChunks(fullText) {
         let cleaned = fullText.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
         let sentences = cleaned.split(/(?<=[.!?])\s+(?=[A-Z"“])/);
@@ -172,39 +196,124 @@
             else {
                 let parts = sent.split(/[,;]/);
                 let temp = '';
-                for (let part of parts) { if ((temp + part).length < 200) temp += (temp ? ',' : '') + part; else { if (temp.trim()) chunks.push(temp.trim()); temp = part; } }
+                for (let part of parts) {
+                    if ((temp + part).length < 200) temp += (temp ? ',' : '') + part;
+                    else { if (temp.trim()) chunks.push(temp.trim()); temp = part; }
+                }
                 if (temp.trim()) chunks.push(temp.trim());
             }
         }
         return chunks.filter(c => c.length > 5);
     }
+
     function speakNextChunk() {
         if (currentChunkIndex >= utteranceChunks.length) { updateUIStatus('ready'); return; }
         if (isPausedFlag) return;
-        const utter = new SpeechSynthesisUtterance(utteranceChunks[currentChunkIndex]);
-        utter.lang = 'ms-MY'; utter.rate = 0.92;
-        utter.onstart = () => updateUIStatus('speaking');
-        utter.onend = () => { if (!isPausedFlag) { currentChunkIndex++; speakNextChunk(); } };
-        utter.onerror = () => { if (!isPausedFlag) { currentChunkIndex++; speakNextChunk(); } };
+        
+        const textToSpeak = utteranceChunks[currentChunkIndex];
+        const utter = new SpeechSynthesisUtterance(textToSpeak);
+        
+        // 关键：强制锁定马来语 (Malaysia)
+        utter.lang = 'ms-MY';
+        utter.rate = 0.92;
+        utter.pitch = 1.0;
+        utter.volume = 1;
+        
+        utter.onstart = () => {
+            currentUtterance = utter;
+            updateUIStatus('speaking');
+        };
+        utter.onend = () => {
+            if (!isPausedFlag) {
+                currentChunkIndex++;
+                speakNextChunk();
+            }
+            currentUtterance = null;
+        };
+        utter.onerror = (e) => {
+            console.warn("Speech error:", e);
+            if (!isPausedFlag) {
+                currentChunkIndex++;
+                speakNextChunk();
+            }
+            currentUtterance = null;
+        };
+        
         synth.speak(utter);
     }
+
     function startFullReading() {
         if (!synth) { updateUIStatus('error'); return; }
+        
+        // 停止当前所有朗读
         synth.cancel();
-        let rawText = articleDiv.innerText;
-        if (!rawText) { updateUIStatus('error'); return; }
+        currentUtterance = null;
+        
+        let rawText = articleDiv.innerText || articleDiv.textContent;
+        if (!rawText || rawText.length < 20) { updateUIStatus('error'); return; }
+        
         utteranceChunks = splitTextIntoChunks(rawText);
-        currentChunkIndex = 0; isPausedFlag = false;
-        if (utteranceChunks.length) speakNextChunk();
-        else updateUIStatus('error');
+        currentChunkIndex = 0;
+        isPausedFlag = false;
+        
+        if (utteranceChunks.length) {
+            speakNextChunk();
+        } else {
+            updateUIStatus('error');
+        }
     }
-    function pauseReading() { if (synth.speaking && !synth.paused) { synth.pause(); isPausedFlag = true; updateUIStatus('paused'); } }
-    function resumeReading() { if (synth.paused) { synth.resume(); isPausedFlag = false; updateUIStatus('speaking'); } else if (isPausedFlag && !synth.speaking) { isPausedFlag = false; speakNextChunk(); } else startFullReading(); }
-    function stopReading() { synth.cancel(); isPausedFlag = false; currentChunkIndex = 0; utteranceChunks = []; updateUIStatus('stopped'); setTimeout(() => updateUIStatus('ready'), 200); }
-    document.getElementById('playBtn').onclick = () => { if (isPausedFlag || synth.paused) resumeReading(); else startFullReading(); };
+
+    function pauseReading() {
+        if (synth.speaking && !synth.paused) {
+            synth.pause();
+            isPausedFlag = true;
+            updateUIStatus('paused');
+        }
+    }
+
+    function resumeReading() {
+        if (synth.paused) {
+            synth.resume();
+            isPausedFlag = false;
+            updateUIStatus('speaking');
+        } else if (isPausedFlag && !synth.speaking) {
+            isPausedFlag = false;
+            speakNextChunk();
+        } else {
+            startFullReading();
+        }
+    }
+
+    function stopReading() {
+        synth.cancel();
+        isPausedFlag = false;
+        currentChunkIndex = 0;
+        utteranceChunks = [];
+        currentUtterance = null;
+        updateUIStatus('stopped');
+        setTimeout(() => updateUIStatus('ready'), 200);
+    }
+
+    // 绑定按钮事件
+    document.getElementById('playBtn').onclick = () => {
+        if (isPausedFlag || (synth && synth.paused)) resumeReading();
+        else startFullReading();
+    };
     document.getElementById('pauseBtn').onclick = () => pauseReading();
     document.getElementById('stopBtn').onclick = () => stopReading();
-    if (!synth) updateUIStatus('error'); else updateUIStatus('ready');
+
+    // 验证语音支持
+    if (!synth) {
+        updateUIStatus('error');
+        statusTextSpan.innerText = '❌ Browser tidak sokong Web Speech API';
+    } else {
+        updateUIStatus('ready');
+        // 预热语音引擎，确保马来语语音加载
+        const warmup = new SpeechSynthesisUtterance(' ');
+        warmup.lang = 'ms-MY';
+        synth.speak(warmup);
+        setTimeout(() => synth.cancel(), 100);
+    }
 </script>
 </body>
 </html>
