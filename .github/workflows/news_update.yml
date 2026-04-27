@@ -1,0 +1,300 @@
+name: Auto Update News
+
+on:
+  schedule:
+    # 马来西亚时间每天早上 6 点和下午 6 点运行（UTC 时间 22:00 和 10:00）
+    - cron: '0 22 * * *'
+    - cron: '0 10 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+permissions:
+  contents: write
+  pages: write
+
+jobs:
+  update-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4 lxml
+      
+      - name: Create news generator script
+        run: |
+          cat > generate_news.py << 'PYEOF'
+import requests
+import html
+from datetime import datetime
+from bs4 import BeautifulSoup
+
+def fetch_bernama(category):
+    """获取 Bernama 新闻"""
+    if category == 'terkini':
+        url = "https://www.bernama.com/bernama/rss/news_terkini.php"
+        title_prefix = "BERNAMA Terkini"
+    else:
+        url = "https://www.bernama.com/bernama/rss/news_ekonomi.php"
+        title_prefix = "BERNAMA Ekonomi"
+    
+    try:
+        resp = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+        resp.raise_for_status()
+        soup = BeautifulSoup(resp.content, "xml")
+        item = soup.find("item")
+        
+        if not item:
+            return None
+        
+        title = item.title.string if item.title else "Tiada tajuk"
+        link = item.link.string if item.link else ""
+        pub_date = item.pubDate.string if item.pubDate else datetime.now().strftime("%a, %d %b %Y")
+        
+        # 获取完整内容
+        content_html = '<p>内容加载中，请访问原文链接。</p>'
+        if link:
+            try:
+                article_resp = requests.get(link, headers={"User-Agent": "Mozilla/5.0"}, timeout=15)
+                article_soup = BeautifulSoup(article_resp.text, 'html.parser')
+                content_parts = []
+                for p in article_soup.find_all('p')[:15]:
+                    text = p.get_text(strip=True)
+                    if len(text) > 30:
+                        content_parts.append(f'<p>{html.escape(text)}</p>')
+                if content_parts:
+                    content_html = '\n'.join(content_parts)
+            except:
+                pass
+        
+        return {
+            'title': title,
+            'link': link,
+            'pub_date': pub_date,
+            'content': content_html,
+            'title_prefix': title_prefix
+        }
+    except Exception as e:
+        print(f"Error fetching {category}: {e}")
+        return None
+
+def generate_bernama_html(news, filename, page_title, color_style):
+    """生成 Bernama 新闻页面 HTML"""
+    date_str = datetime.now().strftime("%d %B %Y")
+    
+    return f'''<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{page_title} - Berita Suara</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            background: linear-gradient(145deg, #f0f4fa 0%, #e6edf4 100%);
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            padding: 24px 20px;
+        }}
+        .container {{ max-width: 1200px; margin: 0 auto; }}
+        .audio-card {{
+            background: white;
+            border-radius: 48px 32px;
+            box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }}
+        .header-bernama {{
+            background: {color_style};
+            padding: 20px 32px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            color: white;
+            border-bottom: 4px solid #ffcc00;
+        }}
+        .logo-area h1 {{
+            font-size: 1.9rem;
+            background: #ffcc00;
+            color: {color_style};
+            padding: 0 16px;
+            border-radius: 60px;
+            display: inline-block;
+        }}
+        .date-badge {{
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 40px;
+        }}
+        .audio-player-panel {{ padding: 28px 32px; background: #fefefe; }}
+        .controls-wrapper {{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+            justify-content: space-between;
+            background: #f8fafd;
+            padding: 20px 24px;
+            border-radius: 60px;
+        }}
+        .btn {{
+            border: none;
+            padding: 12px 28px;
+            border-radius: 100px;
+            font-weight: 600;
+            cursor: pointer;
+        }}
+        .btn-primary {{ background: {color_style}; color: white; }}
+        .btn-secondary {{ background: #eef2ff; color: #1f3a6b; }}
+        .btn-stop {{ background: #fef3f2; color: #b91c1c; }}
+        .status-area {{ background: #eef2fa; border-radius: 40px; padding: 10px 24px; }}
+        .status-led {{ width: 12px; height: 12px; border-radius: 50%; background: #2b9348; display: inline-block; }}
+        .status-led.speaking {{ background: #e85d04; animation: pulse 1s infinite; }}
+        @keyframes pulse {{ 0% {{ opacity: 0.5; }} 100% {{ opacity: 1; }} }}
+        .news-content {{ padding: 32px 36px; background: white; }}
+        .news-title {{ font-size: 1.9rem; font-weight: 800; border-left: 5px solid #ffcc00; padding-left: 24px; }}
+        .meta-info {{ display: flex; gap: 28px; margin: 20px 0; color: #59748f; }}
+        .article-text {{ font-size: 1.08rem; line-height: 1.65; text-align: justify; }}
+        .article-text p {{ margin-bottom: 1.35rem; }}
+        .back-home {{
+            display: inline-block;
+            margin-top: 20px;
+            background: {color_style};
+            color: white;
+            padding: 12px 28px;
+            border-radius: 60px;
+            text-decoration: none;
+        }}
+        @media (max-width: 650px) {{
+            .news-title {{ font-size: 1.5rem; }}
+            .controls-wrapper {{ flex-direction: column; }}
+        }}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="audio-card">
+        <div class="header-bernama">
+            <div class="logo-area">
+                <h1>BERNAMA</h1>
+                <span>{page_title}</span>
+            </div>
+            <div class="date-badge">📅 {date_str}</div>
+        </div>
+        <div class="audio-player-panel">
+            <div class="controls-wrapper">
+                <div class="play-buttons">
+                    <button id="playBtn" class="btn btn-primary">▶ Mainkan Berita</button>
+                    <button id="pauseBtn" class="btn btn-secondary">⏸ Jeda</button>
+                    <button id="stopBtn" class="btn btn-stop">⏹ Henti</button>
+                </div>
+                <div class="status-area">
+                    <span class="status-led" id="statusLed"></span>
+                    <span id="statusText">🎧 Sedia</span>
+                </div>
+            </div>
+        </div>
+        <div class="news-content">
+            <div class="news-title">{html.escape(news['title'])}</div>
+            <div class="meta-info">
+                <span>📰 Bernama</span>
+                <span>🕘 {html.escape(news['pub_date'])}</span>
+            </div>
+            <div class="article-text" id="articleText">
+                {news['content']}
+                <p><a href="{news['link']}" target="_blank">🔗 Sumber asal</a></p>
+            </div>
+        </div>
+    </div>
+    <div style="text-align: center;">
+        <a href="index.html" class="back-home">← Kembali ke News Hub</a>
+    </div>
+</div>
+<script>
+    const articleDiv = document.getElementById('articleText');
+    const synth = window.speechSynthesis;
+    let utteranceChunks = [], currentChunkIndex = 0, isPaused = false;
+    function splitChunks(t) {{
+        let cleaned = t.replace(/\\r?\\n/g,' ').replace(/\\s+/g,' ').trim();
+        let sents = cleaned.split(/(?<=[.!?])\\s+(?=[A-Z"“])/);
+        let chunks = [];
+        for(let s of sents) {{
+            if(s.length <= 200) chunks.push(s.trim());
+            else {{
+                let parts = s.split(/[,;]/), temp='';
+                for(let p of parts) {{
+                    if((temp+p).length<200) temp+=(temp?',':'')+p;
+                    else {{ if(temp.trim()) chunks.push(temp.trim()); temp=p; }}
+                }}
+                if(temp.trim()) chunks.push(temp.trim());
+            }}
+        }}
+        return chunks.filter(c=>c.length>5);
+    }}
+    function speakNext() {{
+        if(currentChunkIndex>=utteranceChunks.length) {{ updateStatus('ready'); return; }}
+        if(isPaused) return;
+        let utter = new SpeechSynthesisUtterance(utteranceChunks[currentChunkIndex]);
+        utter.lang='ms-MY'; utter.rate=0.92;
+        utter.onstart=()=>updateStatus('speaking');
+        utter.onend=()=>{{ if(!isPaused){{ currentChunkIndex++; speakNext(); }} }};
+        utter.onerror=()=>{{ if(!isPaused){{ currentChunkIndex++; speakNext(); }} }};
+        synth.speak(utter);
+    }}
+    function startReading() {{
+        synth.cancel();
+        let raw = articleDiv.innerText;
+        if(!raw) return;
+        utteranceChunks = splitChunks(raw);
+        currentChunkIndex=0; isPaused=false;
+        if(utteranceChunks.length) speakNext();
+    }}
+    function updateStatus(s) {{
+        let el = document.getElementById('statusText');
+        let led = document.getElementById('statusLed');
+        if(s=='speaking') {{ el.innerText='🔊 Membaca...'; led.classList.add('speaking'); }}
+        else if(s=='paused') {{ el.innerText='⏸ Dijeda'; led.classList.remove('speaking'); }}
+        else {{ el.innerText='🎧 Sedia'; led.classList.remove('speaking'); }}
+    }}
+    document.getElementById('playBtn').onclick = () => startReading();
+    document.getElementById('pauseBtn').onclick = () => {{ if(synth.speaking && !synth.paused){{ synth.pause(); isPaused=true; updateStatus('paused'); }} }};
+    document.getElementById('stopBtn').onclick = () => {{ synth.cancel(); isPaused=false; currentChunkIndex=0; updateStatus('ready'); }};
+</script>
+</body>
+</html>'''
+
+def main():
+    # 生成 Bernama Terkini
+    news = fetch_bernama('terkini')
+    if news:
+        with open('docs/bernama_terkini.html', 'w', encoding='utf-8') as f:
+            f.write(generate_bernama_html(news, 'bernama_terkini.html', 'Terkini', '#0033a0'))
+        print("✅ Bernama Terkini updated")
+    
+    # 生成 Bernama Ekonomi
+    news_eco = fetch_bernama('ekonomi')
+    if news_eco:
+        with open('docs/bernama_ekonomi.html', 'w', encoding='utf-8') as f:
+            f.write(generate_bernama_html(news_eco, 'bernama_ekonomi.html', 'Ekonomi', '#1e3c72'))
+        print("✅ Bernama Ekonomi updated")
+
+if __name__ == "__main__":
+    main()
+PYEOF
+      
+      - name: Run news generator
+        run: python generate_news.py
+      
+      - name: Commit and push updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          git diff --staged --quiet || git commit -m "🤖 Auto-update news $(date '+%Y-%m-%d %H:%M')"
+          git push origin master
